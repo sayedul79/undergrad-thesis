@@ -1,0 +1,1418 @@
+\chapter{METHODOLOGY}
+The methodology of this work is
+\tikzstyle{startstop} = [rectangle, rounded corners, 
+minimum width=3cm, 
+minimum height=1cm,
+text centered, 
+draw=black, 
+fill=red!30]
+
+\tikzstyle{io} = [trapezium, 
+trapezium stretches=true, % A later addition
+trapezium left angle=70, 
+trapezium right angle=110, 
+minimum width=3cm, 
+minimum height=1cm, 
+text centered, 
+text width=3cm,
+draw=black, fill=blue!30]
+
+\tikzstyle{process} = [rectangle, 
+minimum width=3cm, 
+minimum height=1cm, 
+text centered, 
+text width=3cm, 
+draw=black, 
+fill=orange!30]
+
+\tikzstyle{decision} = [diamond, 
+minimum width=3cm, 
+minimum height=1cm, 
+text centered,
+text width=3cm,
+draw=black, 
+fill=green!30]
+\tikzstyle{arrow} = [thick,->,>=stealth]
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}[node distance=2cm]
+    \node (start) [startstop] {Start};
+    \node (in1) [io, below of=start] {Determine specifications: Frequency range, Gain};
+    \node (in2) [io, below of=in1] {Select the transistor};
+    \node (process1) [process, below of=in2] {Design the first stage Amplifier};
+    \node (process2) [process, below of=process1] {Design the second stage Amplifier};
+    \node (process3) [process, below of=process2] {Design the inter-stage matching network.};
+    \node (process4) [process, below of=process3] {Design the input matching network.};
+    \node (process5) [process, below of=process3] {Design the input matching network.};
+    \node (process6) [process, below of=process5] {Simulate and optimize the design};
+    \node (dec1) [decision, right of=process6, xshift=3cm] {Meet specifications?};
+    \node (out1) [io, right of=dec1, xshift=3cm] {Output};
+    \node (stop) [startstop, below of=out1] {Stop};
+    \draw [arrow] (start) -- (in1);
+    \draw [arrow] (in1) -- (in2);
+    \draw [arrow] (in2) --(process1);
+    \draw [arrow] (process1) -- (process2);
+    \draw [arrow] (process2) -- (process3);
+    \draw [arrow] (process3) -- (process4);
+    \draw [arrow] (process4) -- (process5);
+    \draw [arrow] (process5) -- (process6);
+    \draw [arrow] (process6) -- (dec1);
+    \draw [arrow] (dec1) -- node[anchor=south] {yes} (out1);
+    \draw [arrow] (dec1) |- node[anchor=south] {no} (process1);
+    \draw [arrow] (out1) -- (stop);
+\end{tikzpicture}
+    \caption{Design methodology of this work.}
+    \label{fig:methodology-flow-chart}
+\end{figure}
+
+\begin{enumerate}[label=\roman*. ]
+    \item Determine the specifications: The initial step is to ascertain the PA's specs, such as the appropriate frequency range, output power, and gain.
+    \item Select the transistor: Choose the right transistor for the amplifier based on the requirements. A CMOS transistor was used in this instance because it is appropriate for high-frequency applications.
+    \item Design the first stage: The amplifier's first stage is built to deliver the appropriate gain. The stagger tuning approach should be used to build this stage, which entails changing the inductors and capacitors so that the input and output resonant frequencies are not the same. The amplifier's bandwidth is widened using this method.
+    \item Design the second stage: In order to provide more gain and bandwidth, the second stage of the amplifier should likewise be developed using a stagger tuning technique.
+    \item Design the input matching network: Create an input matching network to match the transistor's impedance with the source impedance. A network for matching lumped elements can be used to accomplish this.
+    \item Design the interstage matching network: Create an interstage matching network to match the first and second stages' impedances.
+    \item Design the output matching network: Create an output matching network to match the amplifier's impedance with the load's impedance.
+    \item Simulate and optimize the design: Use a circuit simulator (Cadence virtuoso and ADS) to simulate and improve the design, then adjust component values for optimum performance.
+\end{enumerate}
+
+\section{Superimposed Dual Band Power Amplifier}
+\subsection{High Frequency MOSFET Model}
+The MOSFET's small-signal model, which includes the four capacitances $C_{gs}$, $C_{gd}$, $C_{sb}$, and $C_{db}$, is depicted in Figure \ref{fig:mosfet-high-frequecy-model}. MOSFET amplifier's high-frequency response can be predicted using this approach. The model is significantly simplified when the source is coupled to the body, as shown in Figure \ref{fig:mosfet-source-connected-to-bodyl}. Though $C_{gd}$ is small in our model, $C_{gd}$ has a substantial impact on how amplifiers respond at high frequencies, necessitating its inclusion. On the other hand, capacitance $C_{db}$ can typically be disregarded, greatly simplifying manual analysis. Figure \ref{fig:mosfet-neglected-Cdb} depicts the resulting circuit. Finally, we display the high-frequency T model in its simplified form in Figure \ref{fig:mosfet-equivalent-t-model}.
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=.8, thick]
+    \draw (0,0) node[left, above]{$G$} to[short, o-] ++(2,0) coordinate(A)
+    to[C, l=$C_{gd}$] ++(4,0) coordinate(B)
+    to[short] ++(3,0) coordinate(C)
+    to[short] ++(3,0) coordinate(D)
+    to[R, l=$r_0$, *-] ++(0,-4) -- ++(-7,0) coordinate(E) -- ++(-2,0) coordinate(F) -- ++(-1,0)
+    ;
+    \draw (A) to[C, l=$C_{gs}$, v_>=$V_{gs}$, *-] ++(0,-4);
+    \draw (B) to[cI, l^=$g_mV_{gs}$, *-*] ++(0,-4);
+    \draw (C) to[cI, l^=$g_mV_{bs}$, *-*] ++(0,-4);
+    \draw (D) to[short] ++(2,0) coordinate(H) to[short, -o] ++(1,0) node[right, above]{$D$};
+    \draw (E) to[C, l=$C_{sb}$, v_<=$V_{bs}$, *-] ++(0,-2) coordinate(G)
+               to[short, -o] ++(0, -0.5) node[left, below]{$B$};
+    \draw (F) to[short, *-o] ++(0, -2.5) node[left, below]{$S$};
+    \draw (H) to[C, l=$C_{db}$, *-] ++(0, -6) to[short, -*] (G); 
+\end{circuitikz}
+    \caption{MOSFET equivalent-circuit model at high frequencies.}
+    \label{fig:mosfet-high-frequecy-model}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[left, above]{$G$} to[short, o-] ++(1,0) coordinate(A)
+    to[C, l=$C_{gd}$] ++(4,0) coordinate(B)
+    to[short] ++(3,0) coordinate(C)
+    to[short] ++(3,0) coordinate(D)
+    to[R, l=$r_0$, *-] ++(0,-4) -- ++(-8,0) coordinate(E) -- ++(-2,0);
+    \draw (A) to[C, l=$C_{gs}$, v_>=$V_{gs}$, *-] ++(0,-4);
+    \draw (B) to[cI, l^=$g_mV_{gs}$, *-*] ++(0,-4);
+    \draw (C) to[cI, l^=$g_mV_{bs}$, *-*] ++(0,-4);
+    \draw (D) to[short] ++(2,0) coordinate(H) to[short, -o] ++(1,0) node[right, above]{$D$};
+    \draw (H) to[C, l=$C_{db}$, *-] ++(0,-4)-- ++(-2,0);
+    \draw (E) to[short, *-o] ++(0, -0.8) node[left, below]{$S$};
+\end{circuitikz}
+    \caption{The corresponding circuit for the scenario when the source is attached to the substrate (body).}
+    \label{fig:mosfet-source-connected-to-bodyl}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[left, above]{$G$} to[short, o-] ++(1,0) coordinate(A)
+    to[C, l=$C_{gd}$] ++(4,0) coordinate(B)
+    to[short] ++(3,0) coordinate(C)
+    to[short] ++(3,0) coordinate(D)
+    to[R, l=$r_0$, *-] ++(0,-4) -- ++(-8,0) coordinate(E) -- ++(-2,0) coordinate(F);
+    \draw (A) to[C, l=$C_{gs}$, v_>=$V_{gs}$, *-] ++(0,-4);
+    \draw (B) to[cI, l^=$g_mV_{gs}$, *-*] ++(0,-4);
+    \draw (C) to[cI, l^=$g_mV_{bs}$, *-*] ++(0,-4);
+    \draw (D) to[short, -o] ++(1,0) node[right, above]{$D$};
+    \draw (E) to[short, *-o] ++(0, -.6) node[left, below]{$S$};
+\end{circuitikz}
+    \caption{The equivalent-circuit model of Figure \ref{fig:mosfet-source-connected-to-bodyl} without $C_{db}$ (to make analysis simpler).
+}
+    \label{fig:mosfet-neglected-Cdb}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[above, right]{$D$} to[short, o-] ++(0,-1) coordinate(A)
+    to[cI, l^=$g_mV_{gs}$, *-*] ++(0,-3) coordinate(B)
+    to[R, l=$\frac{1}{g_m}$, -*] ++(0,-2) coordinate(C)
+    to[short, -o] ++(0,-1) node[below, left]{$S$};
+    \draw (B) to[short, -o] ++(-3,0) node[right, above]{$G$};
+    \draw (A) -- ++(-2,0) to[C, l=$C_{gd}$] ++(0,-3);
+    \draw (C) -- ++(-2,0) to[C, l=$C_{gs}$, v_<=$V_{gs}$, -*] ++(0,2);
+\end{circuitikz}
+    \caption{The simplified high-frequency T model.}
+    \label{fig:mosfet-equivalent-t-model}
+\end{figure}
+
+\subsection{High Frequecy Response of CS Power Amplifier}
+
+The common-source amplifier is represented by a thorough high-frequency equivalent circuit in Figure \ref{fig:common-source-high-frequency}. The total resistance in this circuit, $R'_L$, which includes $R_D$, $r_o$, and $R_L$ (if applicable), is measured between the output node (drain) and ground.
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+        \draw (0,0) node[left]{$IN$} to[short, o-] ++(0.5,0)
+      to[C, l=$C_s$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1,0) coordinate(G) -- ++(1,0) node[nigfete, anchor=G](mos3){$M_1$}
+        (mos3.S)-- ++(0, -2) coordinate(gnd) node[ground]{}
+        (mos3.D) to[short] ++(0,1) coordinate(D) to[R, l=$R_D$] ++(0,2) node[vcc]{$V_{DD}$};
+        \draw (E) to[R, l=$R_1$] ++(0,2.5) node[vcc]{$V_{G1-CS}$};
+        \draw (G) to[C, l_=$C_{gs}$] ++(0,-2.5) to[short, -*] (gnd);
+        \draw (G) to[C, l_=$C_{gd}$, *-] ++(0,2) to[short, -*] (D);
+        \draw (D) -- ++(2,0) coordinate(out1) to[R, l=$R'_L$] ++(0,-2) node[ground]{};
+        \draw (out1) -- ++(2,0) coordinate(out) to[C, l=$C_L$] ++(0,-2) node[ground]{};
+       \draw (out) to[short, -o] ++(0.5,0)node[right]{$OUT$};
+
+    \end{circuitikz}
+    \caption{Common-source power amplifier circuit at high frequency.}
+    \label{fig:common-source-high-frequency}
+\end{figure}
+
+A current-source load, an extra amplifier stage's input capacitance (if applicable), and a MOSFET's drain-to-body capacitance ($C_db)$ are all included in the total capacitance between the drain node and ground, which is denoted by the symbol $C_L$.
+
+We use the open-circuit time constants method to determine the 3-dB frequency $f_H$ of the CS amplifier depicted in Figure \ref{fig:cs-equivalent-high-frequency}. In order to accomplish this, we set input signal equal to zero and examine each of the four capacitances separately, leaving the other three at zero.
+\begin{figure}
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[ground]{} to[american voltage source, invert] ++(0,2)
+    -- ++(0.5,0) to[C, l=$C_s$] ++(2,0) -- ++(.5,0) coordinate(A) -- ++(2,0)coordinate(B) -- ++(0.5,0) to[C, l=$C_{gd}$] ++(2,0) -- ++(0.5,0) coordinate(C)
+    to[cI, l_=$g_mV_{gs}$, *-] ++(0,-2) node[ground]{};
+    \draw (C) -- ++(2,0) coordinate(D) to[C, l=$C_L$, *-] ++(0,-2) node[ground]{};
+    \draw (D) -- ++(2,0) to[R, l=$R'_L$] ++(0,-2)node[ground]{};
+    \draw (A) to[R, l=$R_G$, *-] ++(0,-2)node[ground]{};
+    \draw (B) to[R, l=$C_{gs}$, *-] ++(0,-2)node[ground]{};
+\end{circuitikz}
+    \caption{The CS power amplifier, a high frequency equivalent circuit shown in Figure \ref{fig:common-source-high-frequency}.}
+    \label{fig:cs-equivalent-high-frequency}
+\end{figure}
+The circuit depicted in Figure \ref{fig:tau_cn_tau_gs_CS} illustrates the configuration used to calculate the resistance $R_s$, which is the effective resistance seen by $C_s$. It can be expressed as 
+\begin{align}
+    R_s &=R_G\\
+    \tau_c &=R_GC_s
+\end{align}
+On the other hand, Figure \ref{fig:tau_gs_cs} presents the circuit used to determine $R_{gs}$ seen by $C_{gs}$.
+\begin{align}
+    R_{gs}&=R_G\\
+    \tau_{gs}&=R_GC_{gs}
+\end{align}
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+  \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0)node[left]{$G$} to[short, o-] ++(1,0) to[R, l=$R_G$] ++(0,-2) node[ground]{};
+    \draw [->] ++(-0.5,-2.5) node[below]{$R_s$} -- ++(0, 1.5) -- ++(1,0);
+\end{circuitikz}
+    \caption{}
+    \label{fig:tau_c_cs}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.49\textwidth}
+  \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0)node[right]{$G$} to[short, o-] ++(-1,0) to[R, l_=$R_G$] ++(0,-2) node[ground]{};
+    \draw [->] ++(0.5,-2.5) node[below]{$R_{gs}$} -- ++(0, 1.5) -- ++(-1,0);
+\end{circuitikz}
+    \caption{}
+    \label{fig:tau_gs_cs}
+  \end{subfigure}
+
+  \caption{Applying the open-circuit time-constants approach to Figure \ref{fig:cs-equivalent-high-frequency} and determine $\tau_s$ and $\tau_{gs}$.
+}
+  \label{fig:tau_cn_tau_gs_CS}
+\end{figure}
+In Figure \ref{fig:tau_l_cs} illustrates the configuration used to calculate the resistance $R_l$, which is the effective resistance seen by $C_L$. It can be expressed as 
+\begin{align}
+    R_l &=R'_L \quad \text{where, } R'_L=\left(R_L||R_D||r_0\right)\\
+    \tau_l &=R'_LC_L=\left(R_L||R_D||r_0\right)C_L
+\end{align}. 
+On the other hand, Figure \ref{fig:tau_gd_cs} presents the circuit used to determine $R_{gd}$ seen by $C_{gd}$.
+\begin{align}
+    R_{gd}&=\frac{V_x}{I_x}=R_G\left(1+g_mR'_L\right)+R'_L\\
+    \tau_{gs}&=R_{gd}C_{gd}=\left[R_G\left(1+g_mR'_L\right)+R'_L\right]C_{gd}
+\end{align}
+Thus the effective time constant $\tau_H$ can be found as
+\begin{align}
+    \tau_H&=\tau_s + \tau_{gs} + \tau_l +\tau_{gd}\\
+    &=R_GC_s+R_GC_{gs}+\left(R_L||R_D||r_0\right)C_L+\left[R_G\left(1+g_mR'_L\right)+R'_L\right]C_{gd}
+\end{align}
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+  \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) to[short, o-] ++(-1,0) coordinate(A) -- ++(-2,0)
+    to[cI, l=$g_mV_{gs}$] ++(0,-2) node[ground]{};
+    \draw (A) to[R, l=$R'_L$] ++(0,-2) node[ground]{};
+    \draw [->] ++(0.5,-2.5) node[below]{$R_{l}$} -- ++(0, 1.5) -- ++(-.6,0);
+\end{circuitikz}
+    \caption{}
+    \label{fig:tau_l_cs}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.49\textwidth}
+  \centering
+   \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[ground]{} to[R, l=$R_G$] ++(0,2)-- ++(0.5,0)
+    to[I, l_=$I_x$, v^<=$V_x$] ++(2,0) -- ++(0.5,0) coordinate(D)
+    to[cI, l=$g_mV_{gs}$] ++(0,-2)node[ground]{};
+    \draw (D) -- ++(2,0) to[R, l=$R'_L$] ++(0,-2) node[ground]{};
+\end{circuitikz}
+    \caption{}
+    \label{fig:tau_gd_cs}
+  \end{subfigure}
+
+  \caption{Applying the open-circuit time-constants approach to Figure \ref{fig:cs-equivalent-high-frequency} and determine $\tau_l$ and $\tau_{gd}$.
+}
+  \label{fig:tau_l_tau_gd_CS}
+\end{figure}
+
+and the 3-db frequency $\omega_H$ is
+\begin{equation}
+    \omega_H=\frac{1}{R_GC_s+R_GC_{gs}+\left(R_L||R_D||r_0\right)C_L+\left[R_G\left(1+g_mR'_L\right)+R'_L\right]C_{gd}}
+\end{equation}
+
+\subsection{High Frequency Response of CG Power Amplifier}
+In Figure \ref{fig:common-gate-high-frequency}, the CG amplifier is depicted with the MOSFET internal capacitances, $C_{gs}$ and $C_{gd}$, separated from the model and highlighted. A capacitance $C_L$ is inserted at the output node to reflect the combined effect of the output capacitance of a current-source load and the input capacitance of a later amplifier stage in order to take into account various aspects. The MOSFET capacitance, $C_db$, is included in this capacitance, $C_L$.
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+        \draw (0,0) node[ground]{} to[short] ++(0.5,0)
+      to[C, l=$C_s$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1,0) coordinate(G) -- ++(1,0) node[nigfete, anchor=G](mos3){$M_1$}
+        (mos3.S)-- ++(0, -1) coordinate(gnd) -- ++(0,-1) to[R, l=$R_s$] ++(-2,0) -- ++(-0.5,0) to[esource, l_=$RF_{in}$] ++(0,-2) node[ground]{} 
+        (mos3.D) to[short] ++(0,1) coordinate(D) to[L, l=$L_D$] ++(0,2) node[vcc]{$V_{DD}$};
+        \draw (E) to[R, l=$R_1$] ++(0,2.5) node[vcc]{$V_{G1-CG}$};
+        \draw (G) to[C, l_=$C_{gs}$] ++(0,-1.5) to[short, -*] (gnd);
+        \draw (G) to[C, l_=$C_{gd}$, *-] ++(0,2) to[short, -*] (D);
+        \draw (D) -- ++(2,0) coordinate(out1) to[R, l=$R_L$] ++(0,-2) node[ground]{};
+        \draw (out1) -- ++(2,0) coordinate(out) to[C, l=$C_L$] ++(0,-2) node[ground]{};
+       \draw (out) to[short, -o] ++(0.5,0)node[right]{$OUT$};
+    \end{circuitikz}
+    \caption{Common-gate power amplifier circuit at high frequency.}
+    \label{fig:common-gate-high-frequency}
+\end{figure}
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+        \draw(0,0) node[ground]{}
+        to[C, l=$C_s$] ++(0,2) -- ++(1.5,0) coordinate(G) -- ++(1.5,0) coordinate(G1)
+        to[C, l=$C_{gs}$] ++(0,-2) -- ++(1.5,0) coordinate(S) -- ++(1.5,0)
+        to[cI, l=$g_mV_{gs}$, invert, *-] ++(0,2) coordinate(D1) -- ++(2,0) coordinate(D) -- ++(1.5,0) coordinate(A) -- ++(1.5,0) coordinate(B) -- ++(1.5,0)
+        to[L, l=$L$] ++(0,-2) node[ground]{};
+        \draw (G1) to[C, l=$C_{gd}$, *-*] (D1);
+        \draw (G) to[R, l=$R_G$, *-] ++(0,-2) node[ground]{};
+        \draw (D) to[R, l=$r_0$, *-] ++(0,-2)-- ++(-2,0);
+        \draw (A) to[R, l=$R_L$, *-] ++(0,-2) node[ground]{};
+        \draw (B) to[C, l=$C_L$, *-] ++(0,-2) node[ground]{};
+        \draw (S) to[short, *-] ++(0,-1)
+        to[R, l=$R_s$] ++(-2,0)
+        to[esource, l_=$RF_{in}$] ++(0,-2) node[ground]{};
+    \end{circuitikz}
+    \caption{High frequency equivalent circuit for the CG power amplifier shown in Figure \ref{fig:common-gate-high-frequency}.}
+    \label{fig:cg-equivalent-high-frequency}
+\end{figure}
+We use the open-circuit time constants method to determine the 3-dB frequency $f_H$ of the
+CG amplifier depicted in Figure \ref{fig:cg-equivalent-high-frequency}. In order to accomplish this, we set input signal equal to
+zero and examine each of the four capacitances and one inductor separately, leaving the other four at zero.
+
+The circuit depicted in Figure \ref{fig:tau_c_cg} illustrates the configuration used to calculate the resistance $R_c$, which is the effective resistance seen by $C_s$. It can be expressed as 
+\begin{align}
+    R_c&=R_G\\
+    \tau_c& =R_G C_s 
+\end{align}
+
+On the other hand, Figure \ref{fig:tau_gs_cg} presents the circuit used to determine $R_{gs}$ seen by $C_{gs}$.
+\begin{align}
+    R_{gs} &=\frac{V_x}{I_x}=R_G\left(1+g_m\left(R_s||r_0\right)\right)+R_s||r_0\\
+    \tau_{gs} &=R_{gs}C_{gs}\\
+    &=\left[R_G\left(1+g_m\left(R_s||r_0\right)\right)+\left(R_s||r_0\right) \right]C_{gs}
+\end{align}
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+  \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0)node[left]{$G$} to[short, o-] ++(1,0) to[R, l=$R_G$] ++(0,-2) node[ground]{};
+    \draw [->] ++(-0.5,-2.5) node[below]{$R_c$} -- ++(0, 1.5) -- ++(1,0);
+\end{circuitikz}
+    \caption{}
+    \label{fig:tau_c_cg}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.5\textwidth}
+  \centering
+    \begin{circuitikz}[american, scale=.9, thick]
+        \draw (0,0) node[ground]{}
+        to[R, l=$R_G$] ++(0,2) -- ++(2,0)
+        to[I, l_=$I_x$, v^<=$V_x$] ++(0,-2) -- ++(1.5,0) coordinate(S) -- ++(1.5,0) coordinate(A)
+        to[cI, l=$g_mV_{gs}$, invert] ++(0,2) -- ++(1.5,0) coordinate(B)
+        to[R, l=$r_0$] ++(0,-2) -- (A);
+        \draw (S) to[short, *-] ++(0, -1)
+        to[R, l=$R_s$] ++(-2,0) node[ground]{};
+        \draw (B) -- ++(1.5,0) coordinate(C) -- ++(1.,0) -- ++(0,-2) node[ground]{};
+        \draw (C) to[R, l=$R_L$] ++(0,-2) node[ground]{};
+    \end{circuitikz}
+    \caption{}
+    \label{fig:tau_gs_cg}
+  \end{subfigure}
+  \caption{Applying the open-circuit time-constants method, find $\tau_c$ and $\tau_{gs}$ for the CG equivalent circuit shown in Figure \ref{fig:cg-equivalent-high-frequency}.
+}
+  \label{fig:tau_c_tau_gs_CS}
+\end{figure}
+
+In Figure \ref{fig:tau_gd_cg} illustrates the configuration used to calculate the resistance $R_{gd}$, which is the effective resistance seen by $C_{gd}$. It can be expressed as 
+\begin{align}
+    R_{gd}&=\frac{V_x}{I_x}=R_G\left(1+g_mR'_L\right)+R'_L \quad \text{where, } R'_L=R_s||r_0\\
+    \tau_{gd}&=\left[R_G\left(1+g_mR'_L\right)+R'_L \right]C_{gd}
+\end{align}
+
+Similarly, Figure \ref{fig:tau_l_cg} presents the circuit used to determine $R_{l}$ seen by $C_{L}$.
+\begin{align}
+    R_l&=\frac{V_x}{I_x}=0\\
+    \tau_L &=R_lC_L=0
+\end{align}
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+  \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[ground]{}
+    to[R, l=$R_G$] ++(0,2) 
+    to[I, l_=$I_x$, v^<=$V_x$] ++(3,0) coordinate(D)
+    to[cI, l=$g_mV_{gs}$, *-*] ++(0,-2) coordinate(S)
+    to[R, l=$R_s$] ++(-2,0) node[ground]{};
+    \draw (D) -- ++(2,0) coordinate(E) 
+    to[R, l=$r_0$, *-] ++(0,-2) -- (S);
+    \draw (E) -- ++(1,0) node[ground]{};
+    \end{circuitikz}
+    \caption{}
+    \label{fig:tau_gd_cg}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.49\textwidth}
+  \centering
+    \begin{circuitikz}[american, scale=1, thick]
+         \draw (0,0) node[ground]{} to[R, l=$R_s$] ++(2,0)
+         to[cI, l=$g_mV_{gs}$, invert, *-] ++(0,2) -- ++(2,0) coordinate(A)
+         to[R, l_=$r_0$, *-] ++(0,-2) -- ++(-2,0);
+         \draw (A) -- ++(1.5,0) coordinate(B) 
+         to[R, l_=$R_L$, *-] ++(0,-2) node[ground]{};
+         \draw (B) -- ++(1.5,0) coordinate(C)
+         to[I, l_=$I_x$, v^>=$V_x$, invert, *-] ++(0,-2) node[ground]{};
+         \draw (C) -- ++(1,0) node[ground]{};
+    \end{circuitikz}
+    \caption{}
+    \label{fig:tau_l_cg}
+  \end{subfigure}
+  \caption{Applying the open-circuit time-constants method, find $\tau_{gd}$ and $\tau_{L}$ for the CG equivalent circuit shown in Figure \ref{fig:cg-equivalent-high-frequency}.
+}
+  \label{fig:tau_gd_tau_l_CS}
+\end{figure}
+
+On the other hand, Figure \ref{fig:tau_d_cg} presents the circuit used to determine $R_{d}$ seen by $L_{D}$.
+\begin{align}
+    R_d&=\frac{V_x}{I_x}=\left(r_0+\left[1+g_mr_0 \right]R_s\right)||R_L\\
+    \tau_d&=\frac{L_d}{R_d}=\frac{L_d}{\left(r_0+\left[1+g_mr_0 \right]R_s\right)||R_L}
+\end{align}
+\begin{figure}[h]
+    \centering
+   \begin{circuitikz}[american, scale=1, thick]
+         \draw (0,0) node[ground]{} to[R, l=$R_s$] ++(2,0)
+         to[cI, l=$g_mV_{gs}$, invert, *-] ++(0,2) -- ++(2,0) coordinate(A)
+         to[R, l_=$r_0$, *-] ++(0,-2) -- ++(-2,0);
+         \draw (A) -- ++(1.5,0) coordinate(B) 
+         to[R, l_=$R_L$, *-] ++(0,-2) node[ground]{};
+         \draw (B) -- ++(1.5,0) coordinate(C)
+         to[I, l_=$I_x$, v^>=$V_x$, invert, *-] ++(0,-2) node[ground]{};
+         %\draw (C) -- ++(1,0) node[ground]{};
+    \end{circuitikz}
+    \caption{Applying the open-circuit time-constants method, find $\tau_{d}$ for the CG equivalent circuit shown in Figure \ref{fig:cg-equivalent-high-frequency}.}
+    \label{fig:tau_d_cg}
+\end{figure}
+As a result, the CG circuit can be made to have a substantially broader bandwidth than the CS circuit, especially when the signal generator's resistance is high. We swap out the MOSFET for its $\Pi$ model in order to investigate the high-frequency response of the CG amplifier shown in Figure \ref{fig:cg-equivalent-high-frequency}.
+As a result, the effective time constant $\tau_H$ is given by
+\begin{equation}
+    \begin{aligned}
+        \tau_H=& \tau_c+\tau_gs+\tau_gd+\tau_L+\tau_d\\
+        &=R_G C_s+ \left[R_G\left(1+g_m\left(R_s||r_0\right)\right)+R_s||r_0 \right]C_{gs}\\
+        &+ \left[R_G\left(1+g_mR'_L\right)+R'_L \right]C_{gd}+
+        \frac{L_d}{\left(r_0+\left[1+g_mr_0 \right]R_s\right)||R_L}
+    \end{aligned}
+\end{equation}
+
+and the 3-dB frequency $\omega_H$ is
+\begin{align}
+    \omega_H &=\frac{1}{\tau_H}=\frac{1}{\tau_c+\tau_gs+\tau_gd+\tau_L+\tau_d}\\
+    &=\frac{1}{R_G C_s+ \left[R_G\left(1+g_m\left(R_s||r_0\right)\right)+R_s||r_0 \right]C_{gs}
+        + \left[R_G\left(1+g_mR'_L\right)+R'_L \right]C_{gd}+
+        \frac{L_d}{\left(r_0+\left[1+g_mr_0 \right]R_s\right)||R_L}
+        }
+\end{align}
+In conclusion, it should be noted that a well-designed CG circuit can exhibit a broad bandwidth. However, it typically has a low input resistance and a relatively low overall midband gain. Therefore, relying solely on the CG circuit may not be sufficient for the intended purpose. However, when the CG amplifier is combined with the CS amplifier in a cascode configuration, it becomes possible to achieve a circuit that combines the high input resistance and gain of the CS amplifier with the wide bandwidth of the CG amplifier.
+\subsection{High Frequency Response of Cascode PA}
+The performance of a CMOS cascode power amplifier(shown in Figure \ref{fig:cascode-cs-cg}) in high-frequency applications is significantly influenced by its high-frequency response. Power amplifiers frequently employ the cascode arrangement to increase gain, linearity, and stability of the circuit.
+\begin{enumerate}[label=\roman*. ]
+    \item Capacitance: Different capacitances have a substantial impact on the high-frequency performance in CMOS cascode amplifiers. The gate-source capacitance ($C_{gs}$), gate-drain capacitance ($C_{gd}$), and drain-substrate capacitance ($C_{db}$) are the three major capacitances. The high-frequency response may be constrained by the parasitic elements introduced by these capacitances. These capacitances become more significant at higher frequencies, forming a bypass path for the AC signal and lowering the effective gain.
+    \item Transit Frequency ($f_t$): The transit frequency is a crucial factor in determining how MOS transistors respond at high frequencies. It stands for the frequency at which the current gain of the transistor begins to decline. The total high-frequency response of the amplifier in a cascode setup is influenced by the transit frequency of the cascode transistor. Better performance at higher frequencies is made possible by higher transit frequencies.
+    \item Miller Effect: The Miller effect is a phenomena whereby the voltage gain between the input and output terminals causes the effective input capacitance of a transistor to rise. A cascode transistor that gives voltage gain and lessens the influence of the input capacitance on the high-frequency response can be used to diminish the Miller effect in a cascode arrangement.
+    \item The high-frequency response of the cascode amplifier can be improved by using inductive peaking techniques. The high-frequency gain can be increased within the amplifier circuit to make up for the capacitance-related constraints by strategically adding inductors.
+\end{enumerate}
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+     \draw (0,0) node[left]{$IN$} to[short, o-] ++(0.5,0)
+      to[C, l=$C_2$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1,0) coordinate(G) -- ++(1,0) node[nigfete, anchor=G](mos3){$M_1$}
+        (mos3.S)-- ++(0, -2) coordinate(gnd) node[ground]{}
+        (mos3.D) to[short] ++(0,1) coordinate(H);
+        %to[R, l=$R_D$] ++(0,2) node[vcc]{$V_{DD}$};
+        \draw (E) to[R, l=$R_1$, *-] ++(0,2.5) node[vcc]{$V_{G1-CS}$};
+        \draw (G) to[C, l_=$C_{gs}$] ++(0,-2.5) to[short, -*] (gnd);
+        \draw (G) to[C, l_=$C_{gd}$, *-] ++(0,2) to[short, -*] (H);
+        \draw (0,5) node[ground]{} to[short] ++(0.5,0)
+      to[C, l=$C_3$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1,0) coordinate(G) -- ++(1,0) node[nigfete, anchor=G](mos3){$M_1$}
+        (mos3.S)-- ++(0, -1)coordinate(gnd) --(H)
+        (mos3.D) to[short] ++(0,1) coordinate(D) to[L, l=$L_D$] ++(0,2) node[vcc]{$V_{DD}$};
+        \draw (E) to[R, l=$R_2$, *-] ++(0,2.5) node[vcc]{$V_{G1-CG}$};
+        \draw (G) to[C, l_=$C_{gs}$] ++(0,-1.5) to[short, -*] (gnd);
+        \draw (G) to[C, l_=$C_{gd}$, *-] ++(0,2) to[short, -*] (D);
+        \draw (D) -- ++(2,0) coordinate(out1) to[R, l=$R_L$, *-] ++(0,-2) node[ground]{};
+        \draw (out1) -- ++(2,0) coordinate(out) to[C, l=$C_L$, *-] ++(0,-2) node[ground]{};
+       \draw (out) to[short, -o] ++(0.5,0)node[right]{$OUT$};
+    \end{circuitikz}
+    \caption{The cascode circuit showing the different transistor capacitances.
+}
+    \label{fig:cascode-cs-cg}
+\end{figure}
+\section{Matching Network Design}
+To ensure that the most power can be transferred from the source to the load, matching networks are used to match the impedance of the source to the impedance of the load.
+
+The design of a matching network involves calculating the required components values, such as resistors, capacitors, and inductors, to match the source and load impedances. The following steps can be used as a general guideline for designing a matching network:
+
+\begin{enumerate}[label=\roman*. ]
+\item Determine the impedance values:  The first step is to determine the impedance of the source and the load. This can be done using measurements or simulations.
+
+\item Determine the impedance values: The input and output impedance values of the CMOS power amplifier and the source/load impedances need to be determined first. This can be done using simulation tools or measured using network analyzers. The impedance values will help determine the required matching network topology and component values.
+
+\item Select the matching network topology: The choice of matching network topology in a CMOS power amplifier is often limited by the available passive components and the need to minimize parasitics. Common topologies include L-networks, π-networks, and transformer-coupled networks. The topology should provide the desired impedance transformation, while minimizing the insertion loss and parasitic effects.
+
+\item Choose the components: In a CMOS power amplifier, the passive components are typically implemented using on-chip components, such as MIM capacitors and spiral inductors. The choice of components is limited by the available space on the chip and the parasitic effects of the components. The component values should be selected to provide the desired impedance transformation and bandwidth.
+
+\item Consider parasitics: The parasitic effects of the passive components and the active devices can have a significant impact on the performance of the matching network. The parasitic capacitances of the MOSFET gate and drain terminals, as well as the parasitic inductances of the bond wires and package, can reduce the performance of the matching network. These parasitic effects need to be taken into account during the design process and can be minimized through careful layout and design.
+
+\item Evaluate performance: The performance of the matching network is evaluated using simulation and/or measurement. The performance metrics include the return loss, insertion loss, bandwidth, and power handling capability. These metrics are used to determine if the matching network is meeting the design requirements.
+
+\item Iterate: If the performance is not satisfactory, the design can be iterated by adjusting the component values or the topology until the desired performance is achieved. This iterative process may require multiple simulations and measurements to achieve the desired performance.
+
+Overall, the design process for a CMOS power amplifier matching network requires careful consideration of the available passive components, the parasitic effects, and the performance requirements of the amplifier. The design process may require a significant amount of simulation and optimization to achieve the desired performance.
+\end{enumerate}
+
+\subsection{L Matching Network}  
+The shunt and series element L-shaped impedance transformer is a fundamental type of impedance matching network. In the case of PA design, the load impedance $R_L$ is usually greater than the source impedance $R_T$, which necessitates a lumped element at the load impedance $R_L$ and another in series. Figure \ref{fig:l-match-downward-network} depicts two L-match networks constructed with inductors and capacitors. The component values for both versions of the L-match networks should be identical to achieve a specific impedance transformation, resulting in identical in-band performance in principle.
+% Downward L match when RT<RL
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+   \begin{circuitikz}[american, scale=1, thick]
+      \draw (0,0) to[L, l=$L$, o-] (2,0)
+      to[short] (4,0)
+      to[R,l=$R_L$] (4,-2)
+      to[short, -o] (0,-2);
+      \draw (2.5,0) to [C, l=$C$, *-*] (2.5,-2);
+      \draw[->] (-.5,-1.5)node[left,below]{$R_T$}--(-.5,-0.5) -- (.4,-0.5);
+    \end{circuitikz}
+    \caption{}
+    \label{fig:downward-low-pass-form}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+      \draw (0,0) to[C, l=$C$, o-] (2,0)
+      to[short] (4,0)
+      to[R,l=$R_L$] (4,-2)
+      to[short, -o] (0,-2);
+      \draw (2.5,0) to [L, l=$L$, *-*] (2.5,-2);
+      \draw[->] (-.5,-1.5)node[left,below]{$R_T$}--(-.5,-0.5) -- (.4,-0.5);
+    \end{circuitikz}
+    \caption{}
+    \label{fig:downward-high-pass-form}
+  \end{subfigure}
+    \caption{Lumped-element L-match network when $R_T<R_L$, in (a) low-pass and (b) high-pass forms \cite{dphipout}}.
+    \label{fig:l-match-downward-network}
+\end{figure}
+
+Usually, the low-pass L-match impedance transformation network is preferred due to its capability of rejecting or attenuating harmonic frequencies which are higher than the fundamental tone. In addition, it can be implemented on printed circuit boards using micro-strip lines which can replace the inductors, offering greater flexibility. Adjusting the position of the capacitors along the lines enables one to fine-tune the network, thus making it more adaptable in practice.
+
+To examine the L-match impedance transformation network in its lumped version, one can refer to the low-pass version depicted in Figure \ref{fig:downward-low-pass-form}. The parallel combination of $R_L$ and $C$ results in an impedance of
+ 
+\begin{equation}
+%eqn 3.2
+    Z_{RC}=\frac{R_L}{1+j\omega R_L C}=\frac{R_L}{1+\left(\frac{R_L}{X_C}\right)^2}-jX_C\frac{\left(\frac{R_L}{X_C}\right)^2}{1+\left(\frac{R_L}{X_C}\right)^2}\label{RL||C}
+\end{equation}
+
+As a result, the values of inductance and capacitance are selected in a way that the real part of $Z_{RC}$ becomes the desired load resistance, $R_T$, and the imaginary part of $Z_{RC}$ is eliminated through the inductor. We can define the impedance transformation factor as $m = R_L/R_T$. Based on equation \eqref{RL||C}, we can calculate the $X_L$ and $X_C$ value.
+
+\begin{align}
+%eqn 3.3 & 3.4
+    &X_L=R_T\sqrt{m-1}\\
+    &X_C=\frac{R_L}{\sqrt{m-1}}
+\end{align}
+
+When designing an impedance matching network, it's essential to consider the quality factor $Q$, which is a significant parameter. The $Q$ of a resonant circuit is calculated by dividing the resonant frequency by the 3-dB bandwidth:
+\begin{equation}
+%eqn 3.5
+    Q=\frac{f_0}{BW}
+\end{equation}
+
+The symbol $f_0$ represents the resonance frequency. As a result, the network's bandwidth is inversely proportional to $Q$. In contrast to resonators, the impedance matching network is powered by a source, which can either be an active device modeled as a source for output-matching or a real signal source for input-matching. As a result, the term "loaded Q" is used when discussing the network's bandwidth in impedance matching applications. The loaded $Q$, $Q_L$, is shown in Figure \ref{fig:loaded-Q} and is defined as the $Q$ driven by a source with the expected source impedance that is close to the matching frequency of the impedance matching network.
+
+
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[ground]{} 
+    to[esource, l=$V_S$] ++(0,2)
+    to[R, l=$R_T$] ++(2,0) -- ++(1,0) coordinate(A) -- ++(0,1) -- ++(2,0) -- ++(0,-1) coordinate(B) -- ++(0,-1)-- ++(-2,0) -- (A);
+    \node[align=center] at ++(4, 2) {matching \\ network};
+    \draw (B) -- ++(1.5,0)
+    to[R, l=$R_L$] ++(0,-2) node[ground]{};
+\end{circuitikz}
+    \caption{The idea of loaded $Q$ \cite{dphipout}.}
+    \label{fig:loaded-Q}
+\end{figure}
+
+The Q of the L-C network for the lumped L-C L-match can be calculated as
+\begin{equation}
+    %eqn 3.6
+    Q=\frac{R_L}{X_C}=\sqrt{m-1}
+\end{equation}
+
+
+In this case, the equivalent resistance of the network doubles at resonance if the circuit is powered by a voltage source with a series resistance of $R_T$ as illustrated in Figure \ref{fig:L-match-driven-Rs}.
+
+\begin{figure}[h]
+%fig 3.3
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+        \draw (0,0) coordinate(A) 
+        to[esource, l=$V_S$] ++(0,2)
+        to[R, l=$R_T$] ++(0,2) -- ++(1,0)
+        to[L, l=$L$] ++(2,0) -- ++(1,0) coordinate(B) -- ++(2,0)
+        to[R, l=$R_L$] ++(0,-4) -- (A);
+        \draw (B) to[C, l=$C$, *-*] ++(0,-4);
+    \end{circuitikz}
+    \caption{Lumped L-match powered by the intended source resistance \cite{dphipout}.}
+    \label{fig:L-match-driven-Rs}
+\end{figure}
+
+\begin{equation}
+    %eqn 3.7
+    Q_L=\frac{1}{2}Q=\frac{1}{2}\sqrt{m-1}
+\end{equation}
+
+Quality factor $Q$ of the low pass upward L-match network in the Figure \ref{fig:upward-low-pass-form} is 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5%%%%%%%%%%
+% uPWARD L match when RT>RL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}[h]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+   \begin{circuitikz}[american, scale=1, thick]
+      \draw (0,0) to[short, o-] (2,0)
+      to[L, l=$L$] (4,0)
+      to[R,l=$R_L$] (4,-2)
+      to[short, -o] (0,-2);
+      \draw (1.6,0) to [C, l=$C$, *-*] (1.6,-2);
+      \draw[->] (-.5,-1.5)node[left,below]{$R_T$}--(-.5,-0.5) -- (.4,-0.5);
+    \end{circuitikz}
+    \caption{}
+    \label{fig:upward-low-pass-form}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+      \draw (0,0) to[short, o-] (2,0)
+      to[C, l=$C$] (4,0)
+      to[R,l=$R_L$] (4,-2)
+      to[short, -o] (0,-2);
+      \draw (1.6,0) to [L, l=$L$, *-*] (1.6,-2);
+      \draw[->] (-.5,-1.5)node[left,below]{$R_T$}--(-.5,-0.5) -- (.4,-0.5);
+    \end{circuitikz}
+    \caption{}
+    \label{fig:upward-high-pass-form}
+  \end{subfigure}
+    \caption{Lumped-element L-match network when $R_T>R_L$, in (a) low-pass and (b) high-pass forms \cite{Analog/RF-IntgCkts}}.
+    \label{fig:l-match-upward-network-}
+\end{figure}
+
+\begin{equation}
+    Q=\sqrt{\frac{R_T}{R_L}-1}
+\end{equation}
+Also
+\begin{align}
+    &L=\frac{QR_L}{\omega_0}\\
+    &C=\frac{1}{\omega_0^2 L}\left(\frac{Q^2}{1+Q^2}\right)
+\end{align}
+
+Similarly for circuit Figure \ref{fig:upward-high-pass-form}
+\begin{equation}
+    Q=\sqrt{\frac{R_T}{R_L}-1}
+\end{equation}
+\begin{align}
+    &C=\frac{1}{\omega_0 Q R_L}\\
+    &L=\frac{1}{\omega_0^2 C}\left (1+\frac{1}{Q^2}\right )
+\end{align}
+
+It should be noted that the impedance ratio $m$ determines the $Q$ when a lumped L-C matching topology is employed. To maximize the power or efficiency performance of the PA, the source resistance $R_T$ is chosen, and the load resistance $R_L$ is typically set at 50 $\Omega$. Therefore, the lumped L-C matching network does not have the flexibility to be designed for $Q$.
+
+\subsection{$\Pi$- Matching Network}
+Typically, the output transistor of power amplifiers has a significant parasitic capacitance at the output. Additionally, the bond wires that link the on-chip output node to the package contribute inductance that cannot be neglected at radio frequencies. Consequently, a simple L-match design would not provide accurate impedance transformation since these factors are not accounted for. To address this, a $\Pi$-match network is employed, as depicted in Figure \ref{fig:pi-match-network}, by adding an extra capacitor $C_1$ at the end of the inductor. The output capacitance of the PA transistor can be integrated into $C_1$, while the capacitance of the package and PCB trace can be incorporated into $C_2$.
+
+\begin{figure}[h]
+    \centering
+   \begin{circuitikz}[american, scale=1, thick]
+      \draw (0,0) to[short, o-] (1,0) to[L, l=$L$] (3,0)
+      to[short] (4.5,0)
+      to[R,l=$R_L$] (4.5,-2)
+      to[short, -o] (0,-2);
+      \draw (1,0) to [C, l=$C_1$, *-*] (1,-2);
+      \draw (3,0) to [C, l=$C_2$, *-*] (3,-2);
+      \draw[->] (-.5,-1.5)node[left,below]{$R_T$}--(-.5,-0.5) -- (.4,-0.5);
+    \end{circuitikz}
+    \caption{$\Pi$-match network in output matching applications.}
+    \label{fig:pi-match-network}
+  \end{figure}
+
+Due to the added component, the $Pi$-match network is a more adaptable choice than L-match and provides greater control over the loaded $Q$ and a larger range of matchable values on the Smith chart \cite{microwave-transistor-amplifier}. In order to match input, output, and interstage application, $Pi$-match is frequently employed. When one of the capacitances is set to zero in an L-match, it is like a specific example of a $Pi$-match. The examination of the $Pi$-match network therefore begins with a more generalized form, as shown in Figure \ref{fig:typical-pi-match-network}, where the network matches $R_1$ and $R_2$ at a specific frequency and is powered by a voltage source $V_S$. 
+For input-matching applications, the RF source can be represented by $V_S$ with $R_1$ as the source impedance and $R_2$ as the RF circuit's input impedance. The Thevenin equivalent of the PA in output-matching applications is $V_S$, where $R_1$ is the PA's ideal output impedance and $R_2$ is the load impedance.
+
+\begin{figure}[h]
+    \centering
+   \begin{circuitikz}[american, scale=1, thick]
+      \draw (0,0) to[esource,l=$V_S$] (0,2)
+      to[R, l=$R_1$] (0,4)
+      to[short] (2.5, 4)
+      to[L, l=$L$] (6.5, 4)
+      to[short] (8.5,4)
+      to[R, l=$R_2$] (8.5, 0)
+      to[short] (0,0);
+      \draw (2.5,4) to[C, l=$C_1$, *-*] (2.5,0);
+      \draw (6.5,4) to[C, l=$C_1$, *-*] (6.5,0);
+      \draw[->] (5.3,-.5)node[left,below]{$Z_B$}--(5.3,1) -- (5.8,1);
+      \draw[->] (3.8,-.5)node[left,below]{$Z_A$}--(3.8,1) -- (3.3,1);
+    \end{circuitikz}
+    \caption{Typical circuit used for analyzing a $\Pi$-match network.}
+    \label{fig:typical-pi-match-network}
+  \end{figure}
+  
+With an additional degree of freedom, it is possible to specify the loaded $Q$ of the network while designing the $\Pi$-match. Therefore, the analysis below assumes that $R_1$, $R_2$, $Q_L$, and the frequency of interest have already been specified. The aim is to derive design equations for determining $L$, $C_1$, and $C_2$.
+
+First define
+\begin{equation}
+\begin{aligned}
+B_{C1} = \omega C1, \quad B_{C2} = \omega C2, \quad X_L = \omega L
+\end{aligned}
+\label{86}
+\end{equation}
+
+and define
+\begin{equation}
+\begin{aligned}
+Q_1=B_{C1}R_1, \quad Q_2=B_{C2}R_2
+\end{aligned}
+\label{87}
+\end{equation}
+
+In Figure \ref{fig:typical-pi-match-network}, $Z_A$ and $Z_B$ are defined as the parallel equivalent impedance of {$R_1$, $C_1$} and {$R_2$, $C_2$}, respectively.Therefore  
+\begin{equation}
+    \begin{aligned}
+        Z_A=R_A-jX_A, \quad Z_B=R_B-jX_B
+    \end{aligned}
+    \label{88}
+\end{equation}
+
+By doing basic circuit analysis
+\begin{align}
+    R_A=\frac{R_1}{1+Q_1^2},\quad X_A=R_A Q_1\label{RA}\\
+    R_B=\frac{R_2}{1+Q_2^2}, \quad X_B=R_B Q_2\label{RB}
+\end{align}
+At conjugate match $R_A=R_B$ and $X_L=X_A+X_B$. Additionally, as the loaded $Q$ at resonance can be represented by $Q_L=\frac{X_L}{R_A+R_B}$, the above conditions allow us to obtain the following relationships from equation \eqref{RA} and \eqref{RB}.
+\begin{equation}
+    Q_L=\frac{1}{2}\left(Q_1+Q_2\right)\label{90}
+\end{equation}
+
+\begin{align}
+    &\frac{R_1}{R_2}=\frac{1+Q_1^2}{1+Q_2^2}\label{91}\\
+    &X_L=R_1\frac{2Q_L}{1+Q_1^2}=R_2\frac{2Q_L}{1+Q_2^2}\label{92}
+\end{align}
+
+The condition for designing a Π-match can be derived from equations \eqref{90} and \eqref{91}. An expression for $Q_2$ can be obtained by rearranging equation \eqref{91}, for instance.
+\begin{equation}
+    Q_2^2=\frac{R_2}{R_1}\left(1+Q_1^2\right)-1
+\end{equation}
+
+To ensure a positive $Q_2$, it is necessary to have either $R_1> R_2$ with $Q_1\geq \sqrt{\frac{R_1}{R_2}-1}$, or $R_2> R_1$ with $Q_2\geq \sqrt{\frac{R_2}{R_1}-1}$. Alternatively, expressed in terms of $Q_L$ from equation \eqref{90}, the design condition for a $\Pi$-match is that:
+\begin{equation}
+    Q_L\geq
+    \begin{cases}
+        \frac{1}{2}\sqrt{\frac{R_1}{R_2}-1} & \text{if } R_1 > R_2 \\
+        \frac{1}{2}\sqrt{\frac{R_2}{R_1}-1} & \text{if } R_2 > R_1 \\
+    \end{cases}
+    \label{94}
+\end{equation}
+
+Once the condition specified in equation \eqref{94} is satisfied, it becomes possible to obtain the values of $Q_1$ and $Q_2$ by utilizing equations \eqref{90} and \eqref{91}.
+\begin{align}
+    Q_1=\frac{2Q_LR_1-\sqrt{4Q_L^2R_1R_2-\left(R_1-R_2\right)^2}}{R_1-R_2}\label{95}\\
+     Q_2=\frac{2Q_LR_2-\sqrt{4Q_L^2R_1R_2-\left(R_1-R_2\right)^2}}{R_2-R_1}\label{96}
+\end{align}
+
+The following is the design procedure for a $\Pi$-match network:
+
+\begin{enumerate}
+\item Set $R_1$, $R_2$, and $Q_L$ and check whether the condition in \eqref{94} is satisfied. If not, assign new values (typically to $Q_L$) until the condition is met.
+\item After verifying that the condition in \eqref{94} is met, solve for $Q_1$ and $Q_2$ using \eqref{95} and \eqref{96}, respectively.
+\item Determine $B_{C1}$, $B_{C2}$, and $X_L$ using equations \eqref{87} and \eqref{92}.
+\item Calculate $C_1$, $C_2$, and $L$ at the frequency of interest using \eqref{86}.
+\end{enumerate}
+
+It should be noted that if one of the capacitances is set to zero, all the equations for the $\Pi$-match become equivalent to those of the L-match. This supports the idea that the L-match is a unique instance of the $\Pi$-match.
+
+As previously mentioned, in RF power amplifier applications, $R_1$ and $R_2$ are generally selected based on power optimization, efficiency optimization, and load requirements. Thus, the subsequent discussion will concentrate on the design considerations for $Q_L$. $Q_L$ determines the matching network's bandwidth based on its definition. Thus, if the bandwidth requirement is specified,
+\begin{equation}
+    Q_L \leq \frac{f_c}{BW}\label{97}
+\end{equation}
+
+The symbols $f_c$ and $BW$ refer to the center frequency and the bandwidth of the band, respectively.
+
+With regard to out-of-band harmonic rejections, there is a trade-off in the design of $Q_L$ for the pass-band. A lower $Q_L$ can be used to increase bandwidth while lowering the matching network's sensitivity to changes in process, voltage, and temperature. larger $Q_L$ values, however, are often needed for larger harmonic rejection levels. Simple network analysis can show that the value of $Q_L$ affects the voltage transfer function of the -match network.
+\begin{equation}
+    H(s)=\frac{V_2}{V_s}=\frac{R_2}{R_1+R_2}\times\frac{1}{1+s\left[L+\left(C_1+C_2\right)\frac{R_1R_2}{R_1+R_2}+s^2\frac{L}{R_1+R_2}\left(C_1R_1+C_2R_2\right)+s^3LC_1C_2\frac{R_1R_2}{R_1+R_2}\right]}\label{98}
+\end{equation}
+
+Define $\omega_m$ as the angular frequency at the match condition, and then use \eqref{86}, \eqref{87}, \eqref{95}, and \eqref{96} to do certain mathematical operations to arrive to
+\begin{align}
+    \omega_mC_1 &=\frac{2Q_LR_1-\sqrt{4Q_L^2R_1R_2-\left(R_1-R_2\right)^2}}{R_1\left(R_1-R_2\right)}\label{99}\\
+    \omega_mC_2 &=\frac{2Q_LR_2-\sqrt{4Q_L^2R_1R_2-\left(R_1-R_2\right)^2}}{R_2\left(R_2-R_1\right)}\label{100}\\
+    \omega_mL&=\frac{\left(R_1-R_2\right)^2}{2Q_L\left(R_1+R_2\right)-2\sqrt{4Q_L^2R_1R_2-\left(R_1-R_2\right)^2}}\label{101}
+\end{align}
+
+By substituting \eqref{99}, \eqref{100}, and \eqref{101} into \eqref{98}, where $k = R_1/R_2$, the transfer function can be expressed in terms of $\omega_m$, $Q_L$, and $k$.In specifically, the magnitude frequency response is as follows when harmonic rejection is a concern:
+
+\begin{equation}
+    \begin{aligned}
+        |H(j\omega)| &= 2\left[(k+1)Q_L-\sqrt{4kQ_L^2-(k-1)^2}\right] \\
+        &\quad \bigg/ \Bigg\{\bigg[2(k-1)^2Q_L \\
+        &-2(k+1)\sqrt{4kQ_L^2-(k-1)^2}-2(k-1)^2Q_L\left(\frac{\omega}{\omega_m}\right)^2\Bigg]^2 \\
+        &+\Bigg(\left[3(k-1)^2 -8kQ_L^2+2(k+1)Q_L\sqrt{4kQ_L^2-(k-1)^2}\right]\left(\frac{\omega}{\omega_m}\right) \\
+        &\quad+\left[8kQ_L^2-2(k+1)Q_L\sqrt{4kQ_L^2-(k-1)^2}-(k-1)^2\right]\left(\frac{\omega}{\omega_m}\right)^3\Bigg)^2
+        \Bigg\}^{\frac{1}{2}}
+    \end{aligned}
+    \label{102}
+\end{equation}
+
+%  \begin{equation}
+%     \begin{aligned}
+%         |H(j\omega)|&=2\left[(k+1)Q_L-\sqrt{4kQ_L^2-(k-1)^2} \right]\text{\Bigg/}\Bigg\{\bigg[2(k-1)^2Q_L \\
+%         &-2(k+1)\sqrt{4kQ_L^2-(k-1)^2}-2(k-1)^2Q_L\left(\frac{\omega}{\omega_m}\right)^2\Bigg]^2 \\
+%         &+\Bigg(\left[3(k-1)^2 -8kQ_L^2+2(k+1)Q_L\sqrt{4kQ_L^2-(k-1)^2}\right]\left(\frac{\omega}{\omega_m}\right) \\
+%         &+\left[8kQ_L^2-2(k+1)Q_L\sqrt{4kQ_L^2-(k-1)^2}-(k-1)^2 \right]\left(\frac{\omega}{\omega_m}\right)^3\Bigg)^2
+%         \Bigg\}^{\frac{1}{2}
+%     \end{aligned}
+%     \label{102}
+% \end{equation}
+
+By setting the angular frequency to $\omega_m$ in equation \eqref{102}, the magnitude response at the matching condition is obtained as 
+\begin{equation}
+    \begin{aligned}
+        |H(j\omega)|=\frac{1}{2\sqrt{k}}=\frac{1}{2}\sqrt{\frac{R_2}{R_1}}
+    \end{aligned}
+    \label{103}
+\end{equation}
+
+which is expected as the Π-match network is an impedance transformer. Let $S(\omega) = \left|H(j\omega)\right|/\left|H(j\omega_m)\right|$. Then, $S(\omega, Q_L, k)$ can be used to determine the lower limit of $Q_L$ for a specified harmonic rejection, once the impedance transformation ratio $k$ is determined. Typically, the second- and third-order harmonic rejections are specified. By substituting $\omega = 2\omega_m$ and $3\omega_m$ in the definition of $S(\omega)$ and then using equations \eqref{102} and \eqref{103}, the lower limit of $Q_L$ can be determined.
+\begin{equation}
+    \begin{aligned}
+        S\left(2\omega_m, Q_L, k\right)&=2\sqrt{k}\left[(k+1)Q_L-\sqrt{4kQ_L^2-(k-1)^2} \right]\\
+        &\text{\Bigg /}\Bigg\{\left(\left[(k+1)^2-4(k-1)^2 \right]Q_L-(k+1)\sqrt{4kQ_L^2-(k-1)^2} \right)^2\\
+        &+\left[24kQ_L^2-6(k+1)Q_L\sqrt{4kQ_L^2-(k-1)^2}-(k-1)^2 \right]^2\Bigg\}^{\frac{1}{2}}
+    \end{aligned}
+    \label{104}
+\end{equation}
+    \begin{equation}
+    \begin{aligned}
+        S\left(3\omega_m, Q_L, k\right)&=2\sqrt{k}\left[(k+1)Q_L-\sqrt{4kQ_L^2-(k-1)^2} \right]\\
+        &\text{\Bigg /}\Bigg\{\left(\left[(k+1)^2-18(k-1)^2 \right]Q_L-(k+1)\sqrt{4kQ_L^2-(k-1)^2} \right)^2\\
+        &+\left[96kQ_L^2-24(k+1)Q_L\sqrt{4kQ_L^2-(k-1)^2} -9(k-1)^2 \right]^2\Bigg\}^{\frac{1}{2}}
+    \end{aligned}
+    \label{105}
+\end{equation}
+
+Once the desired levels of harmonic rejection are specified, we can establish the second constraint on $Q_L$.
+\begin{equation}
+    Q_L=max\left(Q_{L,H2}, Q_{L,H3}\right)\label{106}
+\end{equation}
+
+The $Q_L$ values for the second- and third-order harmonic rejections can be obtained from the graphical approach using equations \eqref{104} and \eqref{105}, respectively. These $Q_L$ values are denoted as $Q_{L,H2}$ and $Q_{L,H3}$.
+
+The parasitic impact is a further design factor for defining QL. Assume that, as is typically the case, the parasitic resistance of the inductor accounts for the majority of the loss and that capacitors are less lossy. In Figure \ref{fig:pi-match-network-with=parasitic}, the $\Pi$-match network is redrew with this parasitic resistance $r$ clearly visible.
+
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+        \draw (0,0) coordinate(A)
+    to[esource, l=$V_s$] ++(0,2) 
+    to[R, l=$R_1$] ++(0,2) -- ++(2,0) coordinate(B) -- ++(1,0)
+    to[L, l=$L_1$] ++(2,0)
+    to[short, i_=$i$] ++(1,0)
+    to[R, l=$r$] ++(2,0) -- ++(1,0) coordinate(C) -- ++(2,0)
+    to[R, l=$R_2$] ++(0,-4) -- (A);
+    \draw (B) to[C, l=$C_1$, *-*] ++(0,-4);
+    \draw (C) to[C, l=$C_2$, *-*] ++(0,-4);
+    \draw[->] ++(4,-1)node[left,below]{$Z_A$} -- ++(0,2.5) -- ++(-1,0);
+    \draw[->] ++(7,-1)node[left,below]{$Z_B$} -- ++(0,2.5) -- ++(1,0);
+    \draw[->] ++(1,6)node[left,above]{$P_{in}$} -- ++(0,-1.5) -- ++(0.7,0);
+    \end{circuitikz}
+    \caption{$\Pi$-match network with inductor’s parasitic resistance.}
+    \label{fig:pi-match-network-with=parasitic}
+\end{figure}
+
+Two consequences of the inductor's parasitic resistance would result in non-ideal power transfer:
+\begin{enumerate}
+\item It results in a direct loss of power in the network, and
+\item It results in an impedance mismatch, which prevents some of the RF power from reaching the output since it is reflected back. $P_{loss}$ and $P_{refl}$ are the terms used to refer to the network power loss and the reflected power, respectively. $P_{out}$ is the output power dissipated at $R_2$, whereas $P_{in}$ stands for the input power at the $\Pi$-match network and $P_{AV}$ stands for the available power from the source $V_S$. So, using the idea of energy conservation, we may say
+\end{enumerate}
+
+\begin{align}
+    P_{AV}&=P_{in}+P_{refl}\\
+    P_{in}&=P_{out}+P_{loss}
+\end{align}
+
+Consider the Thevenin equivalent circuit given in Figure \ref{fig:pi-match-thevenin-equivalent}, where $V_{Th}$ represents the Thevenin equivalent voltage and $R_A$, $R_B$, $X_A$, and $X_B$ are described in equation \eqref{88}, to examine the circuit near matching condition.
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) to[esource, l=$V_{Th}$] ++(0,4)
+    to[short] ++(1,0)
+    to[generic, l=$Z_A$] ++(2,0)
+    to[L, l=$L$] ++(2,0)
+    to[short, i_=$I$] ++(1,0)
+    to[R, l=$r$] ++(2,0)
+    to[short] ++(1,0)
+    to[generic, l=$Z_B$] ++(0,-4)
+    to[short] (0,0);
+\end{circuitikz}
+    \caption{Circuit of the $\Pi$-match network's Thevenin equivalent at close to matching frequency.
+}
+    \label{fig:pi-match-thevenin-equivalent}
+\end{figure}
+
+Define the "unloaded Q" as $Q_u = X_L/r$. Because at matching conditions $R_A = R_B$ by design, $X_L = X_A + X_B$, and $Q_L = X_L/(R_A + R_B)$ by definition, we have
+\begin{align}
+    r&=\frac{X_L}{Q_u}=2R_A\frac{Q_L}{Q_u}\label{109}\\
+    I&=\frac{V_{Th}}{R_A+R_B+r+j\left(X_L-X_A-X_B\right)}=\frac{V_{Th}}{2R_A}\frac{1}{1+\frac{Q_L}{Q_u}}\label{110}
+\end{align}
+
+The available power can be determined using $P_{AV} = V_{Th}^2/(4R_A)$ according to definition \cite{microwave-transistor-amplifier}. Using equations \eqref{109} and \eqref{110} along with $P_{out} = |I|^2R_B$ and $P_{loss} = |I|^2r$, we can therefore obtain
+\begin{align}
+    \frac{P_{loss}}{P_{AV}}&=\frac{2Q_L/Q_u}{\left(1+Q_L/Q_u\right)^2}\label{111}\\
+    \frac{P_{refl}}{P_{AV}}&=\frac{\left(Q_L/Q_u\right)^2}{\left(1+Q_L/Q_u\right)^2}\label{112}\\
+    \frac{P_{out}}{P_{in}}&=\frac{1}{1+2Q_L/Q_u}\label{113}\\
+    \frac{P_{out}}{P_{AV}}&=\frac{1}{\left(1+Q_L/Q_u\right)^2}\label{114}
+\end{align}
+
+Obviously, $P_{loss} = P_{refl} = 0$ and $P_{in} = P_{out} = P_{AV}$ exist if the inductor is lossless, or if $Q_u$ is infinite. The $Q_u$ can often range from 30 to 80 if the inductor is built off-chip.
+For wireless communication applications in particular, $Q_L$ is typically within 5 to meet the bandwidth requirement in \eqref{97} for power amplifier matching purposes. Consequently, it is reasonable to assume that $Q_L/Q_u\ll 1$.
+According to this supposition, the direct power loss component, $P_{loss}$, is the predominant parasitic power loss mechanism, and equations \eqref{113} and \eqref{114} converge.
+
+If the matched network's insertion loss is specified as
+\begin{equation}
+    IL=10\log\frac{P_{AV}}{P_{out}}
+\end{equation}
+
+then if the minimal insertion loss is specified and the available inductor quality factor is given (or its range is known), there may be additional design restriction of the $Q_L$:
+\begin{equation}
+    Q_L\leq Q_u\left(10^{IL_{min}/20}-1\right)\label{116}
+\end{equation}
+
+In conclusion, the selection of $Q_L$ can be limited by \eqref{97}, \eqref{106}, and \eqref{116}. The design process described in this section can be used to design the component values of the $\Pi$-match network once its value has been determined.
+
+\subsection{Multi Section Matching Network}
+Multiple sections of the aforementioned fundamental matching topologies make up multisection matching, as the name implies. A multisection matching network that is the cascade of L-match sections is shown in Figure \ref{fig:multisection-network}.
+
+\begin{figure}[h]
+    \centering
+   \begin{circuitikz}[american, scale=1, thick]
+          \draw (0,0) to[short, o-] ++(.5,0) to[L, l=$L_1$] ++(2,0) -- ++(.5,0) coordinate(A) -- ++(0.5,0) to[L, l=$L_2$] ++(2,0) -- ++(.5,0) coordinate(B) -- ++(1,0) coordinate(C);
+    \draw[dashed] (C) -- ++(1,0) coordinate(D);
+    \draw (D) -- ++(0.5,0) to[L, l=$L_n$] ++(2,0) -- ++(0.5,0) coordinate(E) -- ++(2,0) to[R, l=$R_L$] ++(0,-4) -- ++(-5,0) coordinate(F);
+    \draw[dashed] (F) -- ++(-1,0) coordinate(G);
+    \draw (G) to[short, -o] ++(-7,0);
+    \draw (A) to[C, l=$C_1$, *-*] ++(0,-4);
+    \draw (B) to[C, l=$C_2$, *-*] ++(0,-4);
+    \draw (E) to[C, l=$C_n$, *-*] ++(0,-4);
+    \draw[->] ++(0,-3)node[left,below]{$R_T$} -- ++(0,1.5) -- ++(.5,0);
+    \end{circuitikz}
+    \caption{Multi-section matching network.}
+    \label{fig:multisection-network}
+  \end{figure}
+
+In general, a matching network with more stages has a wider matching bandwidth \cite{microwave-transistor-amplifier}. As a result, a multisection matching network is commonly employed to achieve broadband match. However, a multisection matching network with more components can introduce more power loss. Therefore, a 2-stage matching network is commonly used to achieve a wider bandwidth, as depicted in Figure \ref{fig:two-stage-matching-network}.
+
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) 
+    to[short, o-] ++(1,0)
+    to[L, l=$L_1$] ++(2,0) -- ++(1,0) coordinate(A) -- ++(1,0)
+    to[L, l=$L_2$] ++(2,0) -- ++(1,0) coordinate(B) -- ++(2,0)
+    to[R, l=$R_L$] ++(0,-4)
+    to[short, -o] ++(-10,0);
+    \draw (A) to[C, l=$C_1$, *-*] ++(0,-4);
+    \draw (B) to[C, l=$C_2$, *-*] ++(0,-4);
+    \draw[->] ++(0,-3)node[left,below]{$R_T$} -- ++(0,1.5) -- ++(1,0);
+    \draw[->] ++(6,-3)node[left,below]{$R_m$} -- ++(0,1.5) -- ++(1,0);
+\end{circuitikz}
+    \caption{A two-stage matching network diagram.}
+    \label{fig:two-stage-matching-network}
+\end{figure}
+
+The load impedance $R_L$ is transformed to an intermediate impedance, $R_m$, and finally to the termination impedance $R_T$ by the two-stage matching network. Though the selection of Rm may in theory be random, in practice it is generally advisable to fix $R_m$ so that the impedance transformation ratio between the two stages remains constant:
+
+\begin{equation}
+    \frac{R_L}{R_m}=\frac{R_m}{R_T}
+\end{equation}
+
+The components in a two-stage system undergo less stress when the voltage swing progresses uniformly through both stages. This can be achieved by keeping the impedance transformation ratio the same for both stages, as stated by reference \cite{rf-PA-wireless-communications}.
+\subsection{Capacitively Coupled Resonators}
+Two RLC resonators can be coupled by means of a capacitor $C_C$ as shown in Figure \ref{fig:capacitively-coupled-resonators} \cite{5710437}. When $R_1 = R_2 = R, C_1 = C_2 = C \textit{ and } L_{C1} = L_{C2} = L_C$, the admittance
+parameters of this two-port network are
+
+\begin{figure}[h]
+    \centering
+    \includegraphics{figures/capicitively-coupled-resonator.PNG}
+    \caption{Capacitively coupled resonators schematic \cite{5G-and-E-band}.}
+    \label{fig:capacitively-coupled-resonators}
+\end{figure}
+
+\begin{equation}
+    Y_{11}=Y_{22}=\frac{1}{R}+\frac{1}{sL_C}+s\left (C+C_C\right)=\frac{1}{R}\left [1+Q\left (\frac{s}{\omega_0}+\frac{\omega_0}{s}\right)\right]
+\end{equation}
+\begin{equation}
+    Y_{21}=Y_{12}=-sC_C=-\frac{sk_CQ}{\omega_0 R}
+\end{equation}
+
+Where
+\begin{align}
+    \omega_0&=\frac{1}{\sqrt{L_C\left (C+C_C\right)}}\\
+    Q&=\frac{R}{\omega_0 L_C}=\omega_0R\left (C+C_C\right) \label{Q_increase}\\
+    k_c&=\frac{C_C}{C+C_C}
+\end{align}
+
+The two-port network's transimpedance can be determined as \cite{5710437,microwave-engineering}
+\begin{equation}
+    \begin{split}
+        Z_{21}&=\frac{-Y_[21]}{Y_{11}Y_{22}-Y_{12}Y_{21}}\\ &=\frac{s^3k_CQ\omega_0R}{\left [Q\left (1+k_C\right )s^2+s\omega_0+Q\omega_0^2\right]\left [Q\left (1-k_C\right )s^2+s\omega_0+Q\omega_0^2\right]}
+    \end{split}
+\end{equation}
+
+Assuming high quality factor, the two complex poles of $Z_{21}$ can be calculated as
+\begin{align}
+    \omega_L=\frac{1}{\sqrt{L_C\left (C+2C_C\right )}}\\
+    \omega_H=\frac{1}{\sqrt{L_CC}}
+\end{align}
+
+A higher $C_C$ provides for a wider band-pass bandwidth at the expense of the network's quality factor Equation \eqref{Q_increase} and in-band ripple.
+
+\subsection{Inductively Coupled Resonators}
+An inductor $L_c$ can be used to couple two RLC tanks, resulting in a filter with a schematic shown in Figure \ref{fig:inductively-coupled-resonators} \cite{WidebandReceiver,6942051} expressed as.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics{figures/capicitively-coupled-resonator.PNG}
+    \caption{Inductively coupled
+resonators schematic \cite{5G-and-E-band}.}
+    \label{fig:inductively-coupled-resonators}
+\end{figure}
+
+\begin{equation}
+    Y_{11}=Y_{22}=\frac{1}{R}+\frac{L_{LC}+L_L}{s L_L L_{LC}}+sC=\frac{1}{R}\left [1+Q\left (\frac{s}{\omega_o}+\frac{\omega_0}{s}\right )\right]
+\end{equation}
+
+\begin{equation}
+    Y_{21}=Y_{12}=-\frac{1}{sL_{LC}}=-\frac{\omega_0k_LQ}{sR}
+\end{equation}
+where
+\begin{align}
+    &\omega_0=\frac{1}{\sqrt{\frac{L_L L_{LC}}{L_L+L_{LC}}}}\\
+    &Q=\frac{R\left(L_L+L_{LC}\right )}{\omega_0 L_L L_{LC}}=\omega_0 RC\\
+    &k_L=\frac{L_L}{L_{LC}+L_L}
+\end{align}
+
+The two-port network's transimpedance value can be calculated using
+\begin{equation}
+    Z_{21}=\frac{\omega_0^3k_LQRs}{\left [Qs^2+s\omega_0+Q\left (1+k_L\right )\omega_0^2\right ]\left [Qs^2+s\omega_0+Q\left (1-k_L\right )\omega_0^2\right]}
+\end{equation}
+
+If we assume a high quality factor, we can determine the two complex poles of $Z_{21}$ as follows:
+\begin{align}
+    \omega_L&=\frac{1}{L_LC}\\
+    \omega_H&=\frac{1}{\frac{L_L L_{LC}}{2L_L+L_{LC}C}}
+\end{align}
+
+Opting for a smaller $L_{LC}$ value can result in a wider band-pass bandwidth, but it also leads to higher in-band ripple.
+
+\subsection{Magnetically Coupled Resonators}
+A transformer can be realized by using two magnetically coupled inductors \cite{868049}. Figure \ref{fig:transformer} shows the resulting schematic of the 2-port network, along with three equivalent models.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{figures/transformer.PNG}
+    \caption{Transformer (a) schematic symbol, (b) equivalent T-section model, (c) Z-parameter and d Y-parameter 2-port models \cite{5G-and-E-band}.}
+    \label{fig:transformer}
+\end{figure}
+
+The Y-parameter matrix can be defined when the losses are represented as ideal resistors in parallel with ideal inductors.
+\begin{equation}
+\begin{bmatrix}
+I_1 \\ I_2
+\end{bmatrix} = 
+\begin{bmatrix}
+Y_{11} & Y_{12} \\
+Y_{21} & Y_{22}
+\end{bmatrix}
+\begin{bmatrix}
+V_1 \\ V_2
+\end{bmatrix}=
+\begin{bmatrix}
+\frac{1}{R_{P,p}}+\frac{1}{j\omega L_p\left (1-k^2\right )} & \frac{k}{j\omega \sqrt{\left (L_p L_s\right )}\left (1-k^2\right)} \\
+\frac{k}{j\omega \sqrt{\left (L_p L_s\right )}\left (1-k^2\right)} & \frac{1}{R_{P,s}}+\frac{1}{j\omega L_s\left (1-k^2\right )}
+\end{bmatrix}
+\begin{bmatrix}
+V_1 \\ V_2
+\end{bmatrix}
+\label{transformer-Y-parameter}
+\end{equation}
+
+The parallel resistor and self-inductance of the primary and secondary windings are denoted as $R_{P,p}$, $L_p$, $R_{P,s}$, and $L_s$, respectively.
+
+The practical limitations of on-chip transformers are similar to those of on-chip inductors. However, there are two main differences. Firstly, transformers exhibit a lower self-resonant frequency due to the presence of parasitic inter-winding capacitance. Secondly, the magnetic field between the two coils is more confined, thereby reducing the negative impact of dummies when compared to inductors \cite{6578194,6858393}.
+
+A transformer can be used to couple two RLC tanks together, as shown in Figure \ref{fig:magnetically-coupled-resonators} \cite{7418056}. Assuming $R_1 = R_2 = R$, $C_1 = C_2 = C$, and $L_{M1} = L_{M2} = L_M$, it is easy to obtain the admittance parameters of this two-port network by using the Y-parameter model of the transformer given in equation \eqref{transformer-Y-parameter}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics{figures/magnetically-coupled-resonators.PNG}
+    \caption{Magnetically coupled
+resonators schematic \cite{5G-and-E-band}.}
+    \label{fig:magnetically-coupled-resonators}
+\end{figure}
+
+\begin{equation}
+    Y_{11}=Y_{22}=\frac{1}{R}+\frac{1}{sL_M\left (1-k_M^2\right )}+sC=\frac{1}{R}\left[1+Q\left (\frac{s}{\omega_0}+\frac{\omega_0}{s}\right )\right]
+\end{equation}
+\begin{equation}
+    Y_{21}=Y_{12}=\frac{k_M}{sL_M\left (1-k_M^2\right )}=\frac{k_M\omega_0Q}{sR}
+\end{equation}
+where
+\begin{align}
+    &\omega_0=\frac{1}{\sqrt{L_M\left (1-k_M^2\right )}C}\\
+    &Q=\frac{R}{\omega_0L_M\left (1-k_M^2\right )}=\omega_0RC \label{magnetic_Q}
+\end{align}
+
+The transimpedance value of the two-port network can be determined by
+\begin{equation}
+    Z_{21}=\frac{-\omega_0^3k_MQRs}{\left [Qs^2+s\omega_0+Q\left (1+k_M\right )\omega_0^2\right ]\left [Qs^2+s\omega_0+Q\left (1-k_M\right )\omega_0^2\right]}
+\end{equation}
+
+If we assume a high quality factor, we can determine the two complex poles of $Z_{21}$ as follows:
+\begin{align}
+    &\omega_L=\frac{1}{\sqrt{L_M\left(1+\left|k_M\right|\right)C}}\\
+    &\omega_H-\frac{1}{\sqrt{L_M\left(1-\left|k_M\right|\right)C}}
+\end{align}
+
+Increasing the magnetic coupling coefficient k leads to a wider band-pass bandwidth of the filter. However, it comes at the cost of increased in-band ripple and Q-factor of the filter as shown in equation \ref{magnetic_Q}.
+
+\section{Wideband Matching Network Design using ADS}
+ \begin{figure}
+     \centering
+     \includegraphics[scale=0.5]{figures/matching-ADS.jpeg}
+     \caption{Wide-band matching network design environment using ADS.}
+     \label{fig:matching-network-ads}
+ \end{figure}
+ 
+\subsection{Input Matching Network Design}
+ The proposed CMOS power amplifier's input matching network is made to match the impedance of the input signal source to the amplifier's impedance for effective power transfer. It often includes passive parts like transmission lines, inductors, and capacitors.
+
+The intended performance and operating frequency of the power amplifier determine the precise architecture of the input matching network. L-section matching, T-section matching, $\Pi$-section matching, and distributed matching are examples of common matching topologies.
+
+The proposed input matching network's goals are to reduce input signal reflection, increase power transmission, and provide impedance transformation so that the source impedance can be matched to the amplifier's input impedance. This makes sure the power amplifier functions as efficiently as possible and outputs the most power possible.
+
+By using ADS software, we have selected appropriate component values and dimensions based on the desired frequency response, impedance transformation ratio, and power handling capabilities.
+ \begin{figure}[h]
+     \centering
+     \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[left]{$IN$} to[short, o-] ++(1,0) coordinate(A)
+    to[L, l=$L_1$] ++(3,0) coordinate(B)
+    to[L, l=$L_3$] ++(2,0) to[short, -o] ++(0.5,0) node[right]{$OUT$};
+    \draw (A) to[C, l=$C$, *-] ++(0,-2) node[ground]{};
+    \draw (B) to[L, l=$L_2$, *-] ++(0,-2) node[ground]{};
+    \end{circuitikz}
+     \caption{Input matching network of proposed CMOS power amplifier.}
+     \label{fig:input-matching-network}
+ \end{figure}
+ \begin{table}[h]
+  \centering
+  \caption{Component value of input matching network, Figure \ref{fig:input-matching-network}.}
+  \label{tab:component-value-input-matching-network}
+  \begin{tabular}{@{}cccc@{}}
+    \toprule
+    \textbf{$C$} & \textbf{$L_1$} & \textbf{$L_2$} & \textbf{$L_3$} \\
+    \midrule
+    \SI{355.13}{\femto\farad} & \SI{53.745}{\pico\henry} & \SI{24.23}{\pico\henry} & \SI{68.55}{\pico\henry}  \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Interstage Matching Network Design}
+In multi-stage amplifier designs, interstage matching networks are employed to maintain impedance matching and guarantee effective power transmission between stages. In order to match the input impedance of one stage to the output impedance of the following stage, these networks are positioned between successive amplifier stages, Figure \ref{fig:double-stage-power-amplifier}.
+\begin{figure}[h]
+    \centering
+    \begin{circuitikz}[american, scale=1, thick]
+    \draw (0,0) node[left]{$IN$}
+    to[C, l=$C_1$, o-] ++(2,0) -- ++(.5,0) coordinate(A)-- ++(0.5,0)
+    to[L, l=$L_1$] ++(2,0) -- ++(0.5,0) coordinate(B)
+    to[short] ++(2,0) coordinate(C)
+    to[L, l=$L_3$, -o] ++(2,0)node[right]{$OUT$};
+    \draw (A) to[C, l=$C_2$, *-] ++(0,-2)node[ground]{};
+    \draw (B) to[L, l=$L_2$, *-] ++(0,-2)node[ground]{};
+    \draw (C) to[C, l=$C_3$, *-] ++(0,-2) node[ground]{};
+\end{circuitikz}
+    \caption{Interstage matching network design using ADS.}
+    \label{fig:interstage-matching-network}
+\end{figure}
+\begin{table}[h]
+  \centering
+  \caption{Component value of interstage matching network.}
+  \label{tab:component-value-interstage-matching-network}
+  \begin{tabular}{@{}cccccc@{}}
+    \toprule
+    \textbf{$C_1$} & \textbf{$C_2$} & \textbf{$L_1$} & \textbf{$L_2$} & \textbf{$C_3$} &  \textbf{$L_3$}\\
+    \midrule
+    \SI{56.28}{\femto\farad} & \SI{225.8}{\femto\farad} & \SI{110.143}{\pico\henry} & \SI{3.72}{\pico\henry} & \SI{7.696}{\pico\farad} & \SI{83.94}{\pico\henry} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+\section{Dual Band PA Circuit}
+\subsection{Single Stage PA}
+The cascode amplifier has an extremely high input resistance and a voltage gain that can reach $A^2$ when the CS and CG variants are combined. A single stage power amplifier (PA) designed by the superimposed staggered technique shown in Figure \ref{fig:single-stage-power-amplifier}.
+\begin{figure}[H]
+    \centering
+   \begin{circuitikz}[american, scale=0.7, thick]
+      \draw (0,0) node[left]{$IN$} to[short, o-] ++(0.5,0) 
+      to[C, l=$C_2$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1.5,0) node[nigfete, anchor=G](mos1){$M_1$}
+        (mos1.S) node[ground]{}
+        (mos1.D) to[short] ++(0,3) node[nigfete](mos2){$M_2$}
+        (mos2.D) to[short] ++(0,1) to[L, l=$L_4$] ++(0,2) node[vcc]{$V_{DD1}$}
+        (mos2.G) -- ++(-1.5,0) coordinate(F) -- ++(-1,0)
+        to[C, l=$C_3$] ++(-2,0) 
+        to[short] ++(-0.5,0) node[ground]{};
+        \draw (E) to[R, l=$R_1$, *-] ++(0,2) node[vcc]{$V_{G1-CS}$};
+        \draw (F) to[R, l=$R_2$, *-] ++(0,2) node[vcc]{$V_{G1-CG}$};
+        \draw (mos2.D) to[short, *-o] ++(1,0) node[right]{$OUT$};
+  \end{circuitikz}
+    \caption{Single stage power amplifier without matching network..}
+    \label{fig:single-stage-power-amplifier}
+  \end{figure}
+\subsubsection{Operating Point Analysis}
+For effective and linear amplification in a power amplifier, the transistor should be operating in the saturation area. The transistor is biased in the saturation region when the drain-source voltage ($V_{DS}$) is high enough to maintain a fully open channel and the gate-source voltage ($V_{GS}$) is greater than the threshold voltage ($V_{th}$).
+
+The transistor can reach its maximum current carrying capacity and low output impedance by operating in the saturation region. The power amplifier circuit benefits from high gain, high output power, and good linearity as a result.
+
+By choosing appropriate DC operating points, such as the drain current ($I_D$) and the drain-source voltage ($V_{DS}$) levels, the transistor must be properly biased in order to function correctly in the saturation area. Depending on the specific needs of the power amplifier circuit, such as the intended output power, linearity, and efficiency, the biasing conditions may change.
+ \begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/id-vs-vds-parametric-gs2.png}
+    \caption{}
+    \label{fig:id-vs-vdd-parametric-gs2}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.49\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/id-vs-vds-parametric-gs1.png}
+    \caption{}
+     \label{fig:id-vs-vdd-parametric-gs1}
+  \end{subfigure}
+  \caption{(a) Drain current ($I_D$) vs $V_{DD}$ when changing $V_{G1-CG}$ (b)  Drain current ($I_D$) vs $V_{DD}$ when changing $V_{G1-CS}$.}
+  \label{fig:id-vs-vdd-gs1-gs2}
+\end{figure}
+
+To select the operating point at the saturation region from Figure \ref{fig:id-vs-vdd-parametric-gs2}, select supply voltage $V_{DD}$ is 3.6V, $V_{G1-CG}$ is 2.7V, and saturate current 56.76 mA. To maintain a saturation current of 56.76 mA, the $V_{G1-CS}$ should be 0.9V shown in Figure \ref{fig:id-vs-vdd-parametric-gs1}.
+\begin{table}[H]
+  \centering
+  \caption{Component value of first stage PA, Figure \ref{fig:single-stage-power-amplifier}.}
+  \label{tab:component-value-of-first-stage}
+  \begin{tabular}{@{}ccccc@{}}
+  %\begin{tabular}{\textwidth}{@{}XXXXXXXXXX@{}}
+    \toprule
+    \textbf{$C_2$} & \textbf{$C_3$} & \textbf{$R_1$} & \textbf{$R_2$} & \textbf{$L_4$} \\
+    \midrule
+    \SI{810}{\femto\farad} & \SI{860}{\femto\farad} & \SI{11}{\kilo\ohm} & \SI{11}{\kilo\ohm} & \SI{242}{\pico\henry} \\
+    \midrule
+    \textbf{$V_{G1-CG}$} & \textbf{$V_{G1-CS}$} & \textbf{$M1_{W/L}$} & \textbf{$M2_{W/L}$} & \textbf{$V_{DD1}$}\\
+    \midrule
+     \SI{2.7}{\volt} & \SI{0.9}{\volt} & \SI{160}{\um}/\SI{180}{\nm} & \SI{160}{\um}/\SI{180}{\nm} & \SI{3.6}{\volt}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\newpage
+\subsection{Two Stage PA}
+In order to provide more gain and bandwidth, a second stage is connected to the first stage.
+\begin{figure}[H]
+    \centering
+   \begin{circuitikz}[american, scale=0.7, thick]
+      \draw (0,0) node[left]{$IN$} to[short, o-] ++(0.5,0) 
+      to[C, l=$C_2$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1.5,0) node[nigfete, anchor=G](mos1){$M_1$}
+        (mos1.S) node[ground]{}
+        (mos1.D) to[short] ++(0,3) node[nigfete](mos2){$M_2$}
+        (mos2.D) to[short] ++(0,1) to[L, l=$L_4$] ++(0,2) node[vcc]{$V_{DD1}$}
+        (mos2.G) -- ++(-1.5,0) coordinate(F) -- ++(-1,0)
+        to[C, l=$C_3$] ++(-2,0) 
+        to[short] ++(-0.5,0) node[ground]{};
+        \draw (E) to[R, l=$R_1$, *-] ++(0,2) node[vcc]{$V_{G1-CS}$};
+        \draw (F) to[R, l=$R_2$, *-] ++(0,2) node[vcc]{$V_{G1-CG}$};
+        \draw (mos2.D) to[short, *-] ++(1,0) coordinate(H);
+
+        \draw (H) to[short] ++(1,0) 
+      to[C, l=$C_2$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1.5,0) node[nigfete, anchor=G](mos3){$M_1$}
+        (mos3.S) node[ground]{}
+        (mos3.D) to[short] ++(0,3) node[nigfete](mos4){$M_2$}
+        (mos4.D) to[short] ++(0,1) to[L, l=$L_4$] ++(0,2) node[vcc]{$V_{DD1}$}
+        (mos4.G) -- ++(-1.5,0) coordinate(F) -- ++(-1,0)
+        to[C, l=$C_3$] ++(-2,0) 
+        to[short] ++(-0.5,0) node[ground]{};
+        \draw (E) to[R, l=$R_1$, *-] ++(0,2) node[vcc]{$V_{G1-CS}$};
+        \draw (F) to[R, l=$R_2$, *-] ++(0,2) node[vcc]{$V_{G1-CG}$};
+        \draw (mos4.D) to[short, *-o] ++(0.5,0) node[right]{$OUT$};
+  \end{circuitikz}
+    \caption{Two stage power amplifier without matching network..}
+    \label{fig:double-stage-power-amplifier}
+  \end{figure}
+
+\subsection{Two Stage PA With Matching Network}
+An input-matching network is designed to match thetransistor’s impedance with the source impedance. An interstage matching network is also designed tomatch the first and second stages’ impedances.
+  \begin{figure}[H]
+    \centering
+   \begin{circuitikz}[american,scale=0.8, thick]
+        \draw (0,0) node[left]{$IN$} to[short, o-] ++(1,0) coordinate(A)-- ++(0.5,0)
+        to[L, l=$L_1$] ++(2,0)-- ++(0.5,0) coordinate(B) -- ++(0.5,0)
+        to[L, l=$L_3$] ++(2,0) to[short] ++(0.5,0) coordinate(C);
+        \draw (A) to[C, l=$C_1$, *-] ++(0,-2) node[ground]{};
+        \draw (B) to[L, l=$L_2$, *-] ++(0,-2) node[ground]{};
+        
+        \draw (C) to[C, l=$C_2$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1.5,0) node[nigfete, anchor=G](mos1){$M_1$}
+        (mos1.S) node[ground]{}
+        (mos1.D) to[short] ++(0,3) node[nigfete](mos2){$M_2$}
+        (mos2.D) to[short] ++(0,1) to[L, l=$L_4$] ++(0,2) node[vcc]{$V_{DD1}$}
+        (mos2.G) -- ++(-1.5,0) coordinate(F) -- ++(-1,0)
+        to[C, l=$C_3$] ++(-2,0) 
+        to[short] ++(-0.5,0) node[ground]{};
+        \draw (E) to[R, l=$R_1$, *-] ++(0,2) node[vcc]{$V_{G1-CS}$};
+        \draw (F) to[R, l=$R_2$, *-] ++(0,2) node[vcc]{$V_{G1-CG}$};
+        \draw (mos2.D) to[short] ++(1,0) coordinate(H);
+    \end{circuitikz}
+    \caption{First stage of proposed power amplifier with input matching network.}
+    \label{fig:first-stage-with-input-match}
+  \end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{circuitikz}[american, scale=0.8, thick]
+        \draw (0,0)
+        to[C, l=$C_4$] ++(2,0) -- ++(.5,0) coordinate(A)-- ++(0.5,0)
+        to[L, l=$L_5$] ++(2,0) -- ++(1,0) coordinate(B)
+        to[short] ++(2,0) coordinate(C) -- ++(1,0)
+        to[L, l=$L_7$] ++(2,0) coordinate(end_inters);
+        \draw (A) to[C, l=$C_5$, *-] ++(0,-2)node[ground]{};
+        \draw (B) to[L, l=$L_6$, *-] ++(0,-2)node[ground]{};
+        \draw (C) to[C, l=$C_6$, *-] ++(0,-2) node[ground]{};
+
+        \draw (end_inters) to[short] ++(0.5,0)
+      to[C, l=$C_2$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1.5,0) node[nigfete, anchor=G](mos3){$M_1$}
+        (mos3.S) node[ground]{}
+        (mos3.D) to[short] ++(0,3) node[nigfete](mos4){$M_2$}
+        (mos4.D) to[short] ++(0,1) to[L, l=$L_4$] ++(0,2) node[vcc]{$V_{DD1}$}
+        (mos4.G) -- ++(-1.5,0) coordinate(F) -- ++(-1,0)
+        to[C, l=$C_3$] ++(-2,0) 
+        to[short] ++(-0.5,0) node[ground]{};
+        \draw (E) to[R, l=$R_1$, *-] ++(0,2) node[vcc]{$V_{G1-CS}$};
+        \draw (F) to[R, l=$R_2$, *-] ++(0,2) node[vcc]{$V_{G1-CG}$};
+        \draw (mos4.D) to[short, *-o] ++(0.5,0) node[right]{$OUT$};
+    \end{circuitikz}
+    \caption{Second stage of proposed PA with interstage matching network}
+    \label{fig:second-stage-with-matching-network}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+     \resizebox{\textwidth}{!}{
+   \begin{circuitikz}[american,scale=1, thick]
+        \draw (0,0) node[left]{$IN$} to[short, o-] ++(1,0) coordinate(A)-- ++(0.5,0)
+        to[L, l=$L_1$] ++(2,0)-- ++(0.5,0) coordinate(B) -- ++(0.5,0)
+        to[L, l=$L_3$] ++(2,0) to[short] ++(0.5,0) coordinate(C);
+        \draw (A) to[C, l=$C_1$, *-] ++(0,-2) node[ground]{};
+        \draw (B) to[L, l=$L_2$, *-] ++(0,-2) node[ground]{};
+        
+        \draw (C) to[C, l=$C_2$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1.5,0) node[nigfete, anchor=G](mos1){$M_1$}
+        (mos1.S) node[ground]{}
+        (mos1.D) to[short] ++(0,3) node[nigfete](mos2){$M_2$}
+        (mos2.D) to[short] ++(0,1) to[L, l=$L_4$] ++(0,2) node[vcc]{$V_{DD1}$}
+        (mos2.G) -- ++(-1.5,0) coordinate(F) -- ++(-1,0)
+        to[C, l=$C_3$] ++(-2,0) 
+        to[short] ++(-0.5,0) node[ground]{};
+        \draw (E) to[R, l=$R_1$, *-] ++(0,2) node[vcc]{$V_{G1-CS}$};
+        \draw (F) to[R, l=$R_2$, *-] ++(0,2) node[vcc]{$V_{G1-CG}$};
+        \draw (mos2.D) to[short, *-] ++(1,0) coordinate(H);
+
+
+        \draw (H)
+        to[C, l=$C_4$] ++(2,0) -- ++(.5,0) coordinate(A)-- ++(0.5,0)
+        to[L, l=$L_5$] ++(2,0) -- ++(1,0) coordinate(B)
+        to[short] ++(2,0) coordinate(C) -- ++(1,0)
+        to[L, l=$L_7$] ++(2,0) coordinate(end_inters);
+        \draw (A) to[C, l=$C_5$, *-] ++(0,-2)node[ground]{};
+        \draw (B) to[L, l=$L_6$, *-] ++(0,-2)node[ground]{};
+        \draw (C) to[C, l=$C_6$, *-] ++(0,-2) node[ground]{};
+
+        \draw (end_inters) to[short] ++(0.5,0)
+      to[C, l=$C_2$] ++(2,0) -- ++(1,0) coordinate(E) -- ++(1.5,0) node[nigfete, anchor=G](mos3){$M_1$}
+        (mos3.S) node[ground]{}
+        (mos3.D) to[short] ++(0,3) node[nigfete](mos4){$M_2$}
+        (mos4.D) to[short] ++(0,1) to[L, l=$L_4$] ++(0,2) node[vcc]{$V_{DD1}$}
+        (mos4.G) -- ++(-1.5,0) coordinate(F) -- ++(-1,0)
+        to[C, l=$C_3$] ++(-2,0) 
+        to[short] ++(-0.5,0) node[ground]{};
+        \draw (E) to[R, l=$R_1$, *-] ++(0,2) node[vcc]{$V_{G1-CS}$};
+        \draw (F) to[R, l=$R_2$, *-] ++(0,2) node[vcc]{$V_{G1-CG}$};
+        \draw (mos4.D) to[short, *-o] ++(0.5,0) node[right]{$OUT$};
+    \end{circuitikz}
+    }
+    \caption{With input and an interstage matching network, a two-stage power amplifier.}
+    \label{fig:two-stage-with-input-interstage-matching}
+  \end{figure}

@@ -1,0 +1,75 @@
+\documentclass[12pt]{report}
+\usepackage{mathptmx}
+\usepackage{setspace} % set space between line
+\usepackage{geometry} % for margin specifiabtion
+\usepackage{amsmath}
+\usepackage{graphicx} % for figure
+\usepackage{subcaption} 
+\usepackage{booktabs} % for table creation
+\usepackage{circuitikz} % for draw circuit
+\usepackage{siunitx} % for si unit
+\usepackage{tikz} % for dtaw flow chart
+\usepackage{float}
+\usepackage{enumitem}
+\usetikzlibrary{shapes.geometric, arrows} % for flow chart
+\usepackage[colorlinks,linkcolor=black, citecolor=blue, urlcolor=blue]{hyperref}
+\geometry{left=3.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+% Set font to Palatino Linotype
+\usepackage{fontspec} % allows you to utilize fonts installed on your system directly in your LaTeX document
+%\setmainfont{Times New Roman}
+\setmainfont[
+  Path = PalatinoLinotype/,
+  Extension = .ttf,
+  UprightFont = pala,
+  BoldFont = palab,
+  ItalicFont = palai,
+]{PalatinoLinotype}
+\onehalfspacing
+
+% Define style for chapter headings
+\usepackage{titlesec} % to customize the appearance of section headings, change their alignment, add decorative lines, and more.
+\usepackage{fancyhdr} % to customize the headers and footers of your document.
+\usepackage{lipsum} % for generating dummy text in LaTeX documents.
+\usepackage{lastpage} % provides a simple way to reference the total number of pages in latex document like Page 12 of 40
+\usepackage{etoolbox} % provides tools for modifying and patching LaTeX commands. 
+\usepackage{cite} % of citations and bibliographies in LaTeX.
+
+%thid block for plot figure tex file which is imported from python
+\usepackage[utf8]{inputenc} %  enables LaTeX to handle Unicode characters directly.
+\usepackage{pgfplots}
+\usepgfplotslibrary{groupplots,dateplot}
+\usetikzlibrary{patterns,shapes.arrows}
+\pgfplotsset{compat=newest}
+
+\begin{document}
+% \setmainfont{PalatinoLinotype}[
+%     Path=PalatinoLinotype/,
+%     Extension = .ttf]
+
+\input{input/front_page}
+\input{input/declaration}
+\input{input/dedication}
+\input{input/approval}
+\input{input/acknowledgment}
+\input{input/abstract}
+\tableofcontents
+ \cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+ \cleardoublepage
+ \phantomsection
+ \addcontentsline{toc}{chapter}{List of Tables}
+\listoftables
+\input{input/introduction}
+\input{input/literature-review}
+\input{input/methodology}
+\input{input/result&analysis}
+\input{input/conclusion}
+
+\bibliography{references}
+\bibliographystyle{ieeetr}
+%\bibliographystyle{IEEEtran}
+%\bibliographystyle{plainnat}
+\end{document}
